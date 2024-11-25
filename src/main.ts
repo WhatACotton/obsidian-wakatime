@@ -107,11 +107,12 @@ export default class WakaTime extends Plugin {
     const activeFile = this.app.workspace.getActiveFile();
     if (!activeFile) return;
     const cursor = view.editor.getCursor();
+    const project = this.app.vault.getName();
     // @ts-expect-error
     const file = `${this.app.vault.adapter.basePath}/${activeFile.path}`;
     const time: number = Date.now();
     if (isWrite || this.enoughTimePassed(time) || this.lastFile !== file) {
-      this.sendHeartbeat(file, time, cursor.line, cursor.ch, isWrite);
+      this.sendHeartbeat(file, time, cursor.line, cursor.ch, project, isWrite);
       this.lastFile = file;
       this.lastHeartbeat = time;
     }
@@ -144,11 +145,12 @@ export default class WakaTime extends Plugin {
     time: number,
     lineno: number,
     cursorpos: number,
+    project: string,
     isWrite: boolean,
   ): void {
     this.options.getApiKey((apiKey) => {
       if (!apiKey) return;
-      this._sendHeartbeat(file, time, lineno, cursorpos, isWrite);
+      this._sendHeartbeat(file, time, lineno, cursorpos,project, isWrite);
     });
   }
 
@@ -157,6 +159,7 @@ export default class WakaTime extends Plugin {
     time: number,
     lineno: number,
     cursorpos: number,
+    project: string,
     isWrite: boolean,
   ): void {
     if (!this.dependencies.isCliInstalled()) return;
@@ -170,7 +173,7 @@ export default class WakaTime extends Plugin {
 
     args.push('--lineno', String(lineno + 1));
     args.push('--cursorpos', String(cursorpos + 1));
-
+    args.push('--project', Utils.quote(project));
     if (isWrite) args.push('--write');
 
     if (Desktop.isWindows()) {
